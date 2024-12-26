@@ -1,0 +1,11 @@
+docker-compose build
+docker-compose up -d
+
+docker exec -it spark-master /bin/bash
+/opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/workspace/spark.py
+
+docker stop spark-worker-1
+docker stop spark-worker-2
+docker stop spark-master
+
+docker-compose down
