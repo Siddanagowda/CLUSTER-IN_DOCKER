@@ -3,26 +3,23 @@
 This project sets up a Spark cluster using Docker and Docker Compose. The cluster includes a Spark master node and multiple Spark worker nodes. The setup also includes a shared workspace for data and scripts.
 
 ## Project Structure
-command.txt: Contains commands for setting up and running the cluster.
-
-spark-defaults.conf: Spark configuration file.
-
-docker-compose.yml: Docker Compose file to set up the Spark cluster.
-
-entrypoint.sh: Entrypoint script for the Docker containers.
-
-hetzner-base.Dockerfile: Base Dockerfile for setting up the environment.
-
-requirements.txt: Python dependencies.
-
-spark-cluster.Dockerfile: Dockerfile for Spark master and worker nodes.
-
-spark.py: Spark job script for analyzing Uber data.
-
-uber_data.csv: Uber dataset.
-
-uber_analysis_result.csv: Directory for storing analysis results.
-
+```
+cluster/
+        ├── command.txt 
+        ├── conf/ │ 
+            └── spark-defaults.conf 
+        ├── docker-compose.yml 
+        ├── entrypoint.sh 
+        ├── hetzner-base.Dockerfile 
+        ├── requirements/ 
+            │ └── requirements.txt 
+        ├── spark-cluster.Dockerfile 
+        └── workspace/ 
+            ├── pycache/ 
+            ├── spark.py 
+            ├── uber_analysis_result.csv/ 
+            ├── uber_data.csv
+```
 
 
 ## Prerequisites
