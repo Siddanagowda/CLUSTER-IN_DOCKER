@@ -1,43 +1,38 @@
-import logging
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, desc, rank
-from pyspark.sql.window import Window
+from pyspark import SparkContext, SparkConf
 
-# Configure logging
-logging.getLogger("py4j").setLevel(logging.WARN)
-
-# Initialize Spark Session
-spark = SparkSession.builder \
-    .appName("UberAnalysis") \
-    .config("spark.ui.showConsoleProgress", "false") \
-    .config("spark.log.level", "WARN") \
-    .getOrCreate()
+# Initialize Spark session
+conf = SparkConf().setAppName("UberDataAnalysis")
+sc = SparkContext(conf=conf)
+spark = SparkSession(sc)
 
 # Set log level
-sc = spark.sparkContext
 sc.setLogLevel("WARN")
 
 # Read the Uber dataset
 df = spark.read.csv("/opt/workspace/uber_data.csv", header=True, inferSchema=True)
 
-# Group by base and date, then sum the trips
-grouped_df = df.groupBy("dispatching_base_number", "date").sum("trips")
+# Convert DataFrame to RDD
+rdd = df.rdd
 
-# Rename the aggregated column
-grouped_df = grouped_df.withColumnRenamed("sum(trips)", "total_trips")
+# Map phase: Create key-value pairs ((base, date), trips)
+mapped_rdd = rdd.map(lambda row: ((row['dispatching_base_number'], row['date']), row['trips']))
 
-# Find the day with the most trips for each base
-window_spec = Window.partitionBy("dispatching_base_number").orderBy(desc("total_trips"))
-ranked_df = grouped_df.withColumn("rank", rank().over(window_spec)).filter(col("rank") == 1)
+# Reduce phase: Sum trips for each (base, date)
+reduced_rdd = mapped_rdd.reduceByKey(lambda a, b: a + b)
 
-# Select relevant columns
-result_df = ranked_df.select("dispatching_base_number", "date", "total_trips")
+# Map phase: Create key-value pairs (base, (date, total_trips))
+base_date_rdd = reduced_rdd.map(lambda x: (x[0][0], (x[0][1], x[1])))
+
+# Reduce phase: Find the day with the most trips for each base
+max_trips_rdd = base_date_rdd.reduceByKey(lambda a, b: a if a[1] > b[1] else b)
+
+# Collect the results
+result = max_trips_rdd.collect()
+
+# Convert result to DataFrame for better visualization
+result_df = spark.createDataFrame(result, ["dispatching_base_number", "date_total_trips"])
+result_df = result_df.select("dispatching_base_number", result_df["date_total_trips"].getItem(0).alias("date"), result_df["date_total_trips"].getItem(1).alias("total_trips"))
 
 # Show the result
 result_df.show()
-
-# Save the result to a CSV file
-result_df.write.csv("/opt/workspace/uber_analysis_result.csv", header=True)
-
-# Stop the Spark session
-spark.stop()
