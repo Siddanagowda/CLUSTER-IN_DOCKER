@@ -32,7 +32,13 @@ result = max_trips_rdd.collect()
 
 # Convert result to DataFrame for better visualization
 result_df = spark.createDataFrame(result, ["dispatching_base_number", "date_total_trips"])
-result_df = result_df.select("dispatching_base_number", result_df["date_total_trips"].getItem(0).alias("date"), result_df["date_total_trips"].getItem(1).alias("total_trips"))
+result_df = result_df.select("dispatching_base_number", result_df["date_total_trips"].getField("_1").alias("date"), result_df["date_total_trips"].getField("_2").alias("total_trips"))
 
-# Show the result
+# Results
 result_df.show()
+
+# Write the result to a CSV file
+result_df.write.csv("/opt/workspace/uber_analysis_result.csv", header=True)
+
+# Stop the Spark context
+sc.stop()
